@@ -11,6 +11,8 @@ class Config:
         self.ig_password = os.getenv("INSTAGRAM_PASSWORD")
         self.niche = os.getenv("NICHE", "motivasi harian")
         self.post_time = os.getenv("POST_TIME", "09:00")
+        self.telegram_token = os.getenv("TELEGRAM_BOT_TOKEN")
+        self.telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID")
 
         if not self.gemini_api_key:
             raise ValueError("GEMINI_API_KEY tidak ditemukan di file .env")

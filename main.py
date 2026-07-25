@@ -5,6 +5,7 @@ import time
 from config import Config
 from generator import ContentGenerator
 from instagram import InstagramPoster
+from telegram_notifier import TelegramNotifier
 
 logging.basicConfig(
     level=logging.INFO,
@@ -19,8 +20,13 @@ logger = logging.getLogger(__name__)
 
 def post_daily():
     logger.info("=== Memulai postingan harian Instagram ===")
+    config = Config()
+
+    notifier = None
+    if config.telegram_token and config.telegram_chat_id:
+        notifier = TelegramNotifier(config.telegram_token, config.telegram_chat_id)
+
     try:
-        config = Config()
         generator = ContentGenerator(config.gemini_api_key, config.niche)
         poster = InstagramPoster(config.ig_username, config.ig_password)
 
@@ -30,8 +36,13 @@ def post_daily():
         poster.post_photo(content["image_path"], content["caption"])
         logger.info("=== Postingan berhasil! ===")
 
+        if notifier:
+            notifier.notify_success(content["image_path"], content["caption"], config.niche)
+
     except Exception as e:
         logger.error(f"Gagal posting: {e}", exc_info=True)
+        if notifier:
+            notifier.notify_error(str(e))
 
 
 def main():
