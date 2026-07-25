@@ -70,10 +70,38 @@ class TelegramNotifier:
         )
         self.send_message(text)
 
+    def post_to_channel(self, channel_id: str, image_path: str, caption: str) -> bool:
+        try:
+            with open(image_path, "rb") as photo:
+                resp = requests.post(
+                    self._api_url("sendPhoto"),
+                    data={"chat_id": channel_id, "caption": caption},
+                    files={"photo": photo},
+                    timeout=30,
+                )
+            resp.raise_for_status()
+            logger.info(f"Berhasil posting ke channel {channel_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Gagal posting ke channel: {e}")
+            return False
+
+    def notify_success(self, image_path: str, caption: str, niche: str):
+        waktu = datetime.now().strftime("%d/%m/%Y %H:%M")
+        preview = caption[:200] + "..." if len(caption) > 200 else caption
+        tg_caption = (
+            f"✅ <b>Posting Channel Berhasil!</b>\n\n"
+            f"🕘 <b>Waktu:</b> {waktu}\n"
+            f"🎯 <b>Niche:</b> {niche}\n\n"
+            f"📝 <b>Caption:</b>\n{preview}"
+        )
+        if not self.send_photo(image_path, tg_caption):
+            self.send_message(tg_caption)
+
     def notify_start(self, post_time: str, niche: str):
         waktu = datetime.now().strftime("%d/%m/%Y %H:%M")
         text = (
-            f"🟢 <b>Bot Instagram Aktif!</b>\n\n"
+            f"🟢 <b>Bot Aktif!</b>\n\n"
             f"🕘 <b>Waktu start:</b> {waktu}\n"
             f"🎯 <b>Niche:</b> {niche}\n"
             f"⏰ <b>Jadwal posting:</b> setiap hari pukul {post_time}"
@@ -83,7 +111,7 @@ class TelegramNotifier:
     def notify_stop(self, reason: str = "dihentikan manual"):
         waktu = datetime.now().strftime("%d/%m/%Y %H:%M")
         text = (
-            f"🔴 <b>Bot Instagram Mati!</b>\n\n"
+            f"🔴 <b>Bot Mati!</b>\n\n"
             f"🕘 <b>Waktu:</b> {waktu}\n"
             f"📌 <b>Alasan:</b> {reason}"
         )
@@ -92,7 +120,7 @@ class TelegramNotifier:
     def notify_crash(self, error: str):
         waktu = datetime.now().strftime("%d/%m/%Y %H:%M")
         text = (
-            f"💥 <b>Bot Instagram Crash!</b>\n\n"
+            f"💥 <b>Bot Crash!</b>\n\n"
             f"🕘 <b>Waktu:</b> {waktu}\n"
             f"⚠️ <b>Error:</b>\n<code>{error}</code>\n\n"
             f"⚡ Restart bot secepatnya!"
