@@ -1,4 +1,7 @@
+import atexit
 import logging
+import signal
+import sys
 import schedule
 import time
 
@@ -45,16 +48,47 @@ def post_daily():
             notifier.notify_error(str(e))
 
 
+def build_notifier(config: Config):
+    if config.telegram_token and config.telegram_chat_id:
+        return TelegramNotifier(config.telegram_token, config.telegram_chat_id)
+    return None
+
+
 def main():
     config = Config()
-    post_time = config.post_time
+    notifier = build_notifier(config)
 
-    schedule.every().day.at(post_time).do(post_daily)
-    logger.info(f"Scheduler aktif — posting otomatis setiap hari pukul {post_time}")
+    # Notifikasi saat bot mati (SIGTERM, SIGINT, atau crash tak terduga)
+    def on_shutdown(reason: str):
+        logger.info(f"Bot berhenti: {reason}")
+        if notifier:
+            notifier.notify_stop(reason)
 
-    while True:
-        schedule.run_pending()
-        time.sleep(30)
+    def handle_signal(signum, frame):
+        name = signal.Signals(signum).name
+        on_shutdown(f"sinyal {name} diterima")
+        sys.exit(0)
+
+    signal.signal(signal.SIGTERM, handle_signal)
+    signal.signal(signal.SIGINT, handle_signal)
+    atexit.register(lambda: on_shutdown("proses berakhir"))
+
+    # Notifikasi saat bot start / restart
+    if notifier:
+        notifier.notify_start(config.post_time, config.niche)
+
+    schedule.every().day.at(config.post_time).do(post_daily)
+    logger.info(f"Scheduler aktif — posting otomatis setiap hari pukul {config.post_time}")
+
+    try:
+        while True:
+            schedule.run_pending()
+            time.sleep(30)
+    except Exception as e:
+        logger.critical(f"Bot crash: {e}", exc_info=True)
+        if notifier:
+            notifier.notify_crash(str(e))
+        raise
 
 
 if __name__ == "__main__":

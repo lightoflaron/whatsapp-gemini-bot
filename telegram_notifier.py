@@ -69,3 +69,32 @@ class TelegramNotifier:
             f"⚠️ <b>Error:</b>\n<code>{error}</code>"
         )
         self.send_message(text)
+
+    def notify_start(self, post_time: str, niche: str):
+        waktu = datetime.now().strftime("%d/%m/%Y %H:%M")
+        text = (
+            f"🟢 <b>Bot Instagram Aktif!</b>\n\n"
+            f"🕘 <b>Waktu start:</b> {waktu}\n"
+            f"🎯 <b>Niche:</b> {niche}\n"
+            f"⏰ <b>Jadwal posting:</b> setiap hari pukul {post_time}"
+        )
+        self.send_message(text)
+
+    def notify_stop(self, reason: str = "dihentikan manual"):
+        waktu = datetime.now().strftime("%d/%m/%Y %H:%M")
+        text = (
+            f"🔴 <b>Bot Instagram Mati!</b>\n\n"
+            f"🕘 <b>Waktu:</b> {waktu}\n"
+            f"📌 <b>Alasan:</b> {reason}"
+        )
+        self.send_message(text)
+
+    def notify_crash(self, error: str):
+        waktu = datetime.now().strftime("%d/%m/%Y %H:%M")
+        text = (
+            f"💥 <b>Bot Instagram Crash!</b>\n\n"
+            f"🕘 <b>Waktu:</b> {waktu}\n"
+            f"⚠️ <b>Error:</b>\n<code>{error}</code>\n\n"
+            f"⚡ Restart bot secepatnya!"
+        )
+        self.send_message(text)
