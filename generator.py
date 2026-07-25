@@ -4,22 +4,30 @@ import logging
 from pathlib import Path
 
 import requests
-import google.generativeai as genai
 
 logger = logging.getLogger(__name__)
+
+GEMINI_URL = (
+    "https://generativelanguage.googleapis.com/v1beta/models"
+    "/gemini-1.5-flash:generateContent"
+)
 
 
 class ContentGenerator:
     def __init__(self, api_key: str, niche: str):
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel("gemini-1.5-flash")
+        self.api_key = api_key
         self.niche = niche
         self.image_dir = Path("generated_images")
         self.image_dir.mkdir(exist_ok=True)
 
     def _generate_text(self, prompt: str) -> str:
-        response = self.model.generate_content(prompt)
-        return response.text.strip()
+        response = requests.post(
+            f"{GEMINI_URL}?key={self.api_key}",
+            json={"contents": [{"parts": [{"text": prompt}]}]},
+            timeout=30,
+        )
+        response.raise_for_status()
+        return response.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
 
     def generate_image_prompt(self) -> str:
         prompt = f"""Buat satu prompt bahasa Inggris untuk menghasilkan gambar Instagram tentang "{self.niche}".
@@ -52,7 +60,7 @@ Balas dengan caption + hashtag saja, tanpa penjelasan tambahan."""
             f"?width=1080&height=1080&nologo=true&seed={seed}"
         )
 
-        logger.info(f"Generating image for prompt: {image_prompt[:60]}...")
+        logger.info(f"Generating image: {image_prompt[:60]}...")
         response = requests.get(url, timeout=90)
         response.raise_for_status()
 
