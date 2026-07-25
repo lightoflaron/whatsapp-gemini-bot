@@ -31,7 +31,7 @@ def post_daily():
 
     try:
         generator = ContentGenerator(config.gemini_api_key, config.niche)
-        poster = InstagramPoster(config.ig_username, config.ig_password)
+        poster = InstagramPoster(config.ig_username, config.ig_password, config.ig_sessionid)
 
         content = generator.generate()
         logger.info(f"Caption: {content['caption'][:80]}...")

@@ -10,13 +10,25 @@ SESSION_FILE = Path("session.json")
 
 
 class InstagramPoster:
-    def __init__(self, username: str, password: str):
+    def __init__(self, username: str, password: str, sessionid: str = None):
         self.username = username
         self.password = password
+        self.sessionid = sessionid
         self.client = Client()
         self._login()
 
     def _login(self):
+        # Prioritas 1: pakai session ID dari browser (paling aman)
+        if self.sessionid:
+            try:
+                self.client.login_by_sessionid(self.sessionid)
+                logger.info("Login berhasil menggunakan Session ID")
+                self.client.dump_settings(SESSION_FILE)
+                return
+            except Exception as e:
+                logger.warning(f"Session ID gagal ({e}), coba cara lain...")
+
+        # Prioritas 2: pakai session tersimpan
         if SESSION_FILE.exists():
             try:
                 self.client.load_settings(SESSION_FILE)
@@ -24,11 +36,12 @@ class InstagramPoster:
                 logger.info("Login berhasil menggunakan session tersimpan")
                 return
             except Exception as e:
-                logger.warning(f"Session tidak valid ({e}), login ulang...")
+                logger.warning(f"Session tersimpan tidak valid ({e}), login ulang...")
 
+        # Prioritas 3: login biasa username + password
         self.client.login(self.username, self.password)
         self.client.dump_settings(SESSION_FILE)
-        logger.info("Login berhasil, session disimpan")
+        logger.info("Login berhasil dengan username/password")
 
     def post_photo(self, image_path: str, caption: str):
         try:
